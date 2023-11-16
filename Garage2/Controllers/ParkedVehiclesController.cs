@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Garage2.Data;
 using Garage2.Models.ViewModels;
+using Garage2.Models;
 
 namespace Garage2.Controllers
 {
@@ -79,26 +80,35 @@ namespace Garage2.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Park([Bind("ParkedVehicleId,VehicleType,RegistrationNumber,Make,Model,Year,Color,NumberOfWheels")] ParkedVehicle parkedVehicle)
+        public async Task<IActionResult> Park(ParkViewModel viewModel)
         {
             if (ModelState.IsValid)
             {
-
-                //if (await _context.ParkedVehicle.AnyAsync(v => v.RegistrationNumber == parkedVehicle.RegistrationNumber))
-                if (await DoesRegNoExistsAsync(parkedVehicle.RegistrationNumber))
+                if (await DoesRegNoExistsAsync(viewModel.RegistrationNumber))
                 {
                     ModelState.AddModelError("RegistrationNumber", "Vehicle is alredy in the garage.");
                 }
                 else
                 {
-                    parkedVehicle.TimeOfArrival = DateTime.Now;
-                    _context.Add(parkedVehicle);
+                    var vehicle = new ParkedVehicle
+                    {
+                        VehicleType = viewModel.VehicleType,
+                        RegistrationNumber = viewModel.RegistrationNumber,
+                        Make = viewModel.Make,
+                        Model = viewModel.Model,
+                        Year = viewModel.Year,
+                        Color = viewModel.Color,
+                        NumberOfWheels = viewModel.NumberOfWheels,
+                        TimeOfArrival = DateTime.Now
+                    };
+                    _context.Add(vehicle);
                     await _context.SaveChangesAsync();
                     return RedirectToAction(nameof(Index));
                 }
             }
-            return View(parkedVehicle);
+            return View(viewModel);
         }
+       
 
         [AcceptVerbs("GET", "POST")]
         public async Task<IActionResult> IsRegNoAvailable(string registrationNumber)
